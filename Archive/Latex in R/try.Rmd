@@ -1,0 +1,27 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+<p>\(50\)&nbsp;\(ml\) of \(20.8\%\:\left(w\text{/}V\right)\:BaCl_2\:\left(aq\right)\) and \(100\:ml\) of \(9.8\%\:\left(w\text{/}V\right)\:H_2SO_4\:\left(aq\right)\) solution are mixed. Molarity of&nbsp;\(Cl^-\) ions in the resulting solution is: (At. wt. of&nbsp;\(Ba=137,\:S=32\))
+<p>A mixture of&nbsp;\(O_2\) and gas "\(Y\)" (molecular weight \(80\)) in the mole ratio&nbsp;\(a:b\) has a mean molecular weight&nbsp;\(40\). What would be mean molecular weight, if the gases are mixed in the ratio&nbsp;\(b:a\) under identical conditions? (gases are non-reacting):
+<p>A mixture of&nbsp;\(NH_4NO_3\) and \(\left(NH_4\right)_2HPO_4\) contain&nbsp;\(30.40\%\) mass per cent of nitrogen. What is the mass ratio of the two components in the mixture? (Atomic mass of&nbsp;\(N=14,\:P=31\))
+<p>Suppose two elements&nbsp;\(X\) and&nbsp;\(Y\) combine to form two compounds&nbsp;\(XY_2\) and&nbsp;\(X_2Y_3\). When&nbsp;\(0.05\) \(mol\)  of&nbsp;\(XY_2\) weighs&nbsp;\(5\)&nbsp;\(g\) while&nbsp;\(3.011\times 10^{23}\) molecules of&nbsp;\(X_2Y_3\) weighs&nbsp;\(85\)&nbsp;\(g\). The atomic masses of&nbsp;\(X\) and&nbsp;\(Y\) are respectively:
+<p>\(44\)&nbsp;\(g\) of a sample on complete combustion gives&nbsp;\(88\)&nbsp;\(g\) \(CO_2\) and \(36\) \(g\) of \(H_2O\) . The molecular formula of the compound may be:
+<p>Which statement is false for the balanced equation given below?<br>\(CS_2+3O_2\longrightarrow2SO_2+CO_2\)
+<p>A \(70\:kg\) air sample contains: Oxygen&nbsp;\(\left(65\%\right),\) Carbon&nbsp;\(\left(22.5\%\right),\) Hydrogen&nbsp;\(\left(10.0\%\right)\), and Nitrogen&nbsp;\(\left(2.5\%\right).\) The weight which the air sample would gain if all&nbsp;\(^1H\) atoms are replaced by&nbsp;\(^2H\) atoms is:
+<p>What is the empirical formula of vanadium oxide, if&nbsp;\(2.74\)&nbsp;\(g\) of the metal oxide contains&nbsp;\(1.53\)&nbsp;\(g\) of metal? (Atomic mass of&nbsp;\(V=52\))
+<p>The ratio of masses of oxygen and nitrogen in a particular gaseous mixture is&nbsp;\(2:7\). The ratio of number of their molecules is:
+<p>\(1\)&nbsp;\(M\)&nbsp;\(HCl\) and&nbsp;\(2\)&nbsp;\(M\)&nbsp;\(HCl\) are mixed in volume ratio of&nbsp;\(4:1\). What is the final molarity of&nbsp;\(HCl\) solution?
+<p>Molar mass of an unknown compound \(X_2\) is found to be \(46 \; &nbsp;g/mol\). What will be its molecular mass?
+<p><font face="Fira Sans"><span><b>â???~If two elements can combine to form more than one compound, the masses of one element that combine with a fixed mass of the other element are in the ratio of small whole numbers</b>.â???T This statement states:</span></font>
+<p><font face="Roboto"><span>Barium chloride and sodium phosphate react according to the equation</span></font></p><p>\(3BaCl_2+2Na_3 PO_4â???'Ba_3 (PO_4 )_2+6NaCl\)</p><p>If \(0.5 &nbsp;mole\) of \(BaCl_2\) is mixed with \(0.2\; &nbsp;mole\) of \(Na_3 PO_4\), how many &nbsp;moles of \(Ba_3 (PO_4 )_2\) are formed?
+<p>A mixture of \(N_2\) and \(H_2 \) is caused to react in a closed container to form \(NH_3\). The reaction ends before either reactant has been totally consumed. At this stage, \(2.0 \; moles\) each of \(N_2,H_2\) and \(NH_3\) are present. The moles of \(N_2\) and \(H_2\) present originally were respectively
+<p>\(1.17 \; g\) of menthol (\(C_xH_yO_z\)) burns in air to give \(3.3 \; g\) of \(CO_2\) and \(1.35\; &nbsp;g\) of \(H_2 O\). What is the empirical formula of menthol, if the combustion reaction can be represented as: &nbsp; \(C_XH_YO_Z +mO_2 \to XCO_2+\frac{Y}{2}H_2 O\)
+<p>A gaseous mixture contains \(CO_2 (g)\) and \(N_2 O (g\)) in a \(2:5 \) ratio by mass. The ratio of the number of molecules of \(CO_2 (g)\) and \(N_2 O(g)\) is \(( N = 14 , O = 16, C = 12)\)
+<p>On heating pure limestone dissociates as \(CaCO_3 (s)â???'CaO(s)+CO_2 (g)\). If \(200\; &nbsp;g\) of limestone is heated in an open container, compute the reduction in its weight. ( Atomic mass of \(Ca = 40, C = 12, O = &nbsp;16\))
+<p>\(30 \; g\) of a substance of molecular weight \(= 15 \; amu\) when dissolved in \(2170\: g\) &nbsp;water yields a solution of density \(1.1\; &nbsp;g / mL\). The molarity of the solution is
+<p>Consider &nbsp;the reaction \(2A+3Bâ???'A_2 B_3\). In which of the following reaction mixtures is \(A\) the limiting reagent?
+<p>Which of the following statements is incorrect?

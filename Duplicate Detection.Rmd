@@ -1,0 +1,184 @@
+---
+title: "De-duplicating CMS repositry"
+author: "Pritesh Shrivastava"
+date: "January 22, 2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## Reading data from CMS
+
+```{r echo = FALSE}
+library('tidyverse')
+library('SparseM')
+library('tm')
+library('caret')
+library('SnowballC')
+library('stringr')
+
+Qs <- read_tsv("qs_topicwise_dump.tsv")
+
+head(Qs)
+```
+
+## Adding Grade, Subject, Curriculum and Chapter No 
+
+```{r echo = FALSE}
+# Need to clean the overflow of text
+Qs_clean <- Qs  %>%
+  dplyr::select(1:14) %>%                 # Keeping only the first 14 columns
+  filter(!is.na(Difficulty))  %>%         # Cleaning overflow
+  mutate(Grade = str_sub(Topic_Code, 5, 6), Subject = str_sub(Topic_Code, 1, 3), Curriculum = str_sub(Topic_Code, 8, 10), Ch_No = str_sub(Topic_Code, 12, 13))
+
+# Removing non-UTF characters
+#Qs_clean$Text <- lapply(Qs_clean$Text,gsub, pattern = "[^[:alnum:]]", replacement = " ")
+#Qs_clean$Text <- lapply(Qs_clean$Text,gsub, pattern = "<.*?>", replacement= " ")
+Qs_clean$fullText = paste(Qs_clean$Text, Qs_clean$A, Qs_clean$B, Qs_clean$C, Qs_clean$D)
+
+Qs_clean <- Qs_clean %>% filter(str_length(Qs_clean$fullText) > 50)
+# Removed Dummy Qs and Spectrum ans key
+
+head(Qs_clean)
+
+```
+
+## Creating vocabulary by tokenizing text - using text2vec
+
+```{r echo = FALSE}
+library(text2vec)
+
+test <- Qs_clean %>% filter(Subject == "MTH") 
+  
+clean <- test$fullText %>%
+    str_to_lower  %>% 
+    {gsub("[^A-Za-z0-9]", " ", .)} %>%
+    #{gsub("[^a-zA-Z\\s]", "", .)} %>% 
+    #{gsub("//d", "",.)} %>%
+    {gsub("[[:punct:]]"," ", .)} %>%
+    str_squish
+
+
+
+it = itoken(clean, progressbar = FALSE)
+
+v = create_vocabulary(it) %>% prune_vocabulary(doc_proportion_max = 0.1, term_count_min = 3)
+
+```
+
+## Creating Document Term Matices - text2vec
+
+```{r echo = FALSE}
+vectorizer = vocab_vectorizer(v)
+
+View(vectorizer)
+dtm = create_dtm(it, vectorizer)
+dim(dtm)
+
+```
+
+
+### Cosine similarity with tf-idf - text2vec
+
+```{r echo = FALSE}
+tfidf = TfIdf$new()
+dtm_tfidf = fit_transform(dtm, tfidf)
+dtm_tfidf[1:5, 1:5]
+```
+
+Calculate similarities between all rows of dtm_tfidf matrix
+
+```{r echo = FALSE}
+tfidf_cos_sim = sim2(x = dtm_tfidf, method = "cosine", norm = "l2")
+tfidf_cos_sim[1:6, 1:6]
+
+```
+
+## Cosine similarity with Latent Semantic Analysis
+
+Usually tf-idf/bag-of-words matrices contain a lot of noise. Applying LSA model can help with this problem, so you can achieve better quality similarities
+
+```{r echo = FALSE}
+lsa = LSA$new(n_topics = 10)
+dtm_tfidf_lsa = fit_transform(dtm_tfidf, lsa)
+```
+
+Calculate similarities between all rows of dtm_tfidf_lsa matrix
+
+```{r echo = FALSE}
+tfidf_lsa_cos_sim = sim2(x = dtm_tfidf_lsa, method = "cosine", norm = "l2")
+tfidf_lsa_cos_sim[1:6, 1:6]
+
+```
+
+### Tidying similarity matrix
+
+```{r echo=FALSE}
+similarity <- tfidf_lsa_cos_sim %>% as.data.frame.table()
+head(similarity)
+
+```
+
+### Filtering near duplicates
+
+```{r echo=FALSE}
+# Figure out the optimum similarity threshold - 0.99,99,999
+dupl_list <- filter(similarity, Freq > .9999999) %>%
+  rename( row = Var1, column = Var2, Similarity_Measure = Freq) %>% 
+  filter(as.numeric(row) > as.numeric(column))  %>%   # Remove double entries
+  filter(row != column)       # Remove diagnol entries
+  
+head(dupl_list)
+```
+
+## Final list of Duplicate Qs
+
+```{r echo=FALSE}
+duplicates <- dupl_list %>% 
+  mutate(row_id = test$Code[row], row_q = test$fullText[row], row_topic = test$Topic_Code[row], row_status = test$Status[row],col_id = test$Code[column],  col_q = test$fullText[column],col_topic = test$Topic_Code[column], col_status = test$Status[column]) 
+
+duplicates[c(1:5),c(4,5,7,8)]
+
+write_csv(duplicates, "duplicate.csv")
+
+```
+
+## Create text corpus - using tm
+
+```{r echo=FALSE}
+text_corpus <- VCorpus(VectorSource(Qs_clean$fullText)) 
+##include both and test and training set to build the corpus
+#inspect (text_corpus)
+lapply(text_corpus[2:4], as.character)       # Multiple docs
+```
+
+## Cleaning text - using tm 
+Removing punctuations, numbers and stop words
+Converting to lower case
+Stemming words - learned, learning, and learns are transformed into the base form, learn
+Removing additional white spaces
+
+```{r echo=FALSE}
+# Source : [2] Removing non-UTF8 characters
+text_corpus_clean <- tm_map(text_corpus, content_transformer(gsub), pattern ="[^[:alnum:]]" , replacement = " ")
+text_corpus_clean <- tm_map(text_corpus_clean, content_transformer(gsub), pattern ="[\u0080-\uffff]" , replacement = " ")
+
+## Now non-UTF characters are removed. We can do regular tasks on the clean corpus.
+
+text_corpus_clean <- tm_map(text_corpus_clean, removeNumbers)
+text_corpus_clean <- tm_map(text_corpus_clean, content_transformer(tolower))
+
+## Add stopwords like left, right (frac ?)
+text_corpus_clean <- tm_map(text_corpus_clean, removeWords, c(stopwords(), "left","right"))
+text_corpus_clean <- tm_map(text_corpus_clean, removePunctuation)
+text_corpus_clean <- tm_map(text_corpus_clean, stemDocument)
+text_corpus_clean <- tm_map(text_corpus_clean, stripWhitespace)
+```
+
+## Bag of words - Tokenization using tm
+```{r echo=FALSE}
+text_dtm <- DocumentTermMatrix(text_corpus_clean)
+text_dtm
+
+# Add a dictionary to DTM ?
+```
