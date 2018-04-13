@@ -71,14 +71,13 @@ v = create_vocabulary(it) %>% prune_vocabulary(doc_proportion_max = 0.1, term_co
 ```{r echo = FALSE}
 vectorizer = vocab_vectorizer(v)
 
-View(vectorizer)
 dtm = create_dtm(it, vectorizer)
 dim(dtm)
 
 ```
 
 
-### Cosine similarity with tf-idf - text2vec
+### Applying tf-idf on dtm
 
 ```{r echo = FALSE}
 tfidf = TfIdf$new()
@@ -86,7 +85,7 @@ dtm_tfidf = fit_transform(dtm, tfidf)
 dtm_tfidf[1:5, 1:5]
 ```
 
-Calculate similarities between all rows of dtm_tfidf matrix
+## Cosine similarities between all rows of dtm_tfidf matrix
 
 ```{r echo = FALSE}
 tfidf_cos_sim = sim2(x = dtm_tfidf, method = "cosine", norm = "l2")
@@ -99,13 +98,10 @@ tfidf_cos_sim[1:6, 1:6]
 Usually tf-idf/bag-of-words matrices contain a lot of noise. Applying LSA model can help with this problem, so you can achieve better quality similarities
 
 ```{r echo = FALSE}
-lsa = LSA$new(n_topics = 10)
+# Add no of topics in your repo (Keep no less than 20 else code will crash)
+lsa = LSA$new(n_topics = 15)
 dtm_tfidf_lsa = fit_transform(dtm_tfidf, lsa)
-```
 
-Calculate similarities between all rows of dtm_tfidf_lsa matrix
-
-```{r echo = FALSE}
 tfidf_lsa_cos_sim = sim2(x = dtm_tfidf_lsa, method = "cosine", norm = "l2")
 tfidf_lsa_cos_sim[1:6, 1:6]
 
@@ -125,7 +121,7 @@ head(similarity)
 # Figure out the optimum similarity threshold - 0.99,99,999
 dupl_list <- filter(similarity, Freq > .9999999) %>%
   rename( row = Var1, column = Var2, Similarity_Measure = Freq) %>% 
-  filter(as.numeric(row) > as.numeric(column))  %>%   # Remove double entries
+  filter(as.numeric(row) > as.numeric(column))  %>%   # Remove double entries in a symmetric matrix i,j and j,i
   filter(row != column)       # Remove diagnol entries
   
 head(dupl_list)
@@ -145,7 +141,7 @@ write_csv(duplicates, "duplicate.csv")
 
 ## Create text corpus - using tm
 
-```{r echo=FALSE}
+```{r echo=FALSE, eval=FALSE}
 text_corpus <- VCorpus(VectorSource(Qs_clean$fullText)) 
 ##include both and test and training set to build the corpus
 #inspect (text_corpus)
@@ -158,7 +154,7 @@ Converting to lower case
 Stemming words - learned, learning, and learns are transformed into the base form, learn
 Removing additional white spaces
 
-```{r echo=FALSE}
+```{r echo=FALSE, eval=FALSE}
 # Source : [2] Removing non-UTF8 characters
 text_corpus_clean <- tm_map(text_corpus, content_transformer(gsub), pattern ="[^[:alnum:]]" , replacement = " ")
 text_corpus_clean <- tm_map(text_corpus_clean, content_transformer(gsub), pattern ="[\u0080-\uffff]" , replacement = " ")
@@ -176,7 +172,7 @@ text_corpus_clean <- tm_map(text_corpus_clean, stripWhitespace)
 ```
 
 ## Bag of words - Tokenization using tm
-```{r echo=FALSE}
+```{r echo=FALSE, eval=FALSE}
 text_dtm <- DocumentTermMatrix(text_corpus_clean)
 text_dtm
 
