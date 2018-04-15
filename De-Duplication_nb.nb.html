@@ -181,6 +181,18 @@ $(document).ready(function () {
 <h2>Reading data from CMS</h2>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeSgndGlkeXZlcnNlJylcbmxpYnJhcnkoJ1NwYXJzZU0nKVxubGlicmFyeSgndG0nKVxubGlicmFyeSgnY2FyZXQnKVxubGlicmFyeSgnU25vd2JhbGxDJylcbmxpYnJhcnkoJ3N0cmluZ3InKVxuXG5RcyA8LSByZWFkX3RzdihcInFzX3RvcGljd2lzZV9kdW1wLnRzdlwiKVxuXG5oZWFkKFFzKVxuYGBgIn0= -->
+<pre class="r"><code>library('tidyverse')
+library('SparseM')
+library('tm')
+library('caret')
+library('SnowballC')
+library('stringr')
+
+Qs &lt;- read_tsv(&quot;qs_topicwise_dump.tsv&quot;)
+
+head(Qs)</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
@@ -188,6 +200,24 @@ $(document).ready(function () {
 <h2>Adding Grade, Subject, Curriculum and Chapter No</h2>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBOZWVkIHRvIGNsZWFuIHRoZSBvdmVyZmxvdyBvZiB0ZXh0XG5Rc19jbGVhbiA8LSBRcyAgJT4lXG4gIGRwbHlyOjpzZWxlY3QoMToxNCkgJT4lICAgICAgICAgICAgICAgICAjIEtlZXBpbmcgb25seSB0aGUgZmlyc3QgMTQgY29sdW1uc1xuICBmaWx0ZXIoIWlzLm5hKERpZmZpY3VsdHkpKSAgJT4lICAgICAgICAgIyBDbGVhbmluZyBvdmVyZmxvd1xuICBtdXRhdGUoR3JhZGUgPSBzdHJfc3ViKFRvcGljX0NvZGUsIDUsIDYpLCBTdWJqZWN0ID0gc3RyX3N1YihUb3BpY19Db2RlLCAxLCAzKSwgQ3VycmljdWx1bSA9IHN0cl9zdWIoVG9waWNfQ29kZSwgOCwgMTApLCBDaF9ObyA9IHN0cl9zdWIoVG9waWNfQ29kZSwgMTIsIDEzKSlcblxuIyBSZW1vdmluZyBub24tVVRGIGNoYXJhY3RlcnNcbiNRc19jbGVhbiRUZXh0IDwtIGxhcHBseShRc19jbGVhbiRUZXh0LGdzdWIsIHBhdHRlcm4gPSBcIlteWzphbG51bTpdXVwiLCByZXBsYWNlbWVudCA9IFwiIFwiKVxuI1FzX2NsZWFuJFRleHQgPC0gbGFwcGx5KFFzX2NsZWFuJFRleHQsZ3N1YiwgcGF0dGVybiA9IFwiPC4qPz5cIiwgcmVwbGFjZW1lbnQ9IFwiIFwiKVxuUXNfY2xlYW4kZnVsbFRleHQgPSBwYXN0ZShRc19jbGVhbiRUZXh0LCBRc19jbGVhbiRBLCBRc19jbGVhbiRCLCBRc19jbGVhbiRDLCBRc19jbGVhbiREKVxuXG5Rc19jbGVhbiA8LSBRc19jbGVhbiAlPiUgZmlsdGVyKHN0cl9sZW5ndGgoUXNfY2xlYW4kZnVsbFRleHQpID4gNTApXG4jIFJlbW92ZWQgRHVtbXkgUXMgYW5kIFNwZWN0cnVtIGFucyBrZXlcblxuaGVhZChRc19jbGVhbilcblxuYGBgIn0= -->
+<pre class="r"><code># Need to clean the overflow of text
+Qs_clean &lt;- Qs  %&gt;%
+  dplyr::select(1:14) %&gt;%                 # Keeping only the first 14 columns
+  filter(!is.na(Difficulty))  %&gt;%         # Cleaning overflow
+  mutate(Grade = str_sub(Topic_Code, 5, 6), Subject = str_sub(Topic_Code, 1, 3), Curriculum = str_sub(Topic_Code, 8, 10), Ch_No = str_sub(Topic_Code, 12, 13))
+
+# Removing non-UTF characters
+#Qs_clean$Text &lt;- lapply(Qs_clean$Text,gsub, pattern = &quot;[^[:alnum:]]&quot;, replacement = &quot; &quot;)
+#Qs_clean$Text &lt;- lapply(Qs_clean$Text,gsub, pattern = &quot;&lt;.*?&gt;&quot;, replacement= &quot; &quot;)
+Qs_clean$fullText = paste(Qs_clean$Text, Qs_clean$A, Qs_clean$B, Qs_clean$C, Qs_clean$D)
+
+Qs_clean &lt;- Qs_clean %&gt;% filter(str_length(Qs_clean$fullText) &gt; 50)
+# Removed Dummy Qs and Spectrum ans key
+
+head(Qs_clean)
+</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
@@ -195,6 +225,26 @@ $(document).ready(function () {
 <h2>Creating vocabulary by tokenizing text - using text2vec</h2>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeSh0ZXh0MnZlYylcblxudGVzdCA8LSBRc19jbGVhbiAlPiUgZmlsdGVyKFN1YmplY3QgPT0gXCJNVEhcIikgXG4gIFxuY2xlYW4gPC0gdGVzdCRmdWxsVGV4dCAlPiVcbiAgICBzdHJfdG9fbG93ZXIgICU+JSBcbiAgICB7Z3N1YihcIlteQS1aYS16MC05XVwiLCBcIiBcIiwgLil9ICU+JVxuICAgICN7Z3N1YihcIlteYS16QS1aXFxcXHNdXCIsIFwiXCIsIC4pfSAlPiUgXG4gICAgI3tnc3ViKFwiLy9kXCIsIFwiXCIsLil9ICU+JVxuICAgIHtnc3ViKFwiW1s6cHVuY3Q6XV1cIixcIiBcIiwgLil9ICU+JVxuICAgIHN0cl9zcXVpc2hcblxuXG5cbml0ID0gaXRva2VuKGNsZWFuLCBwcm9ncmVzc2JhciA9IEZBTFNFKVxuXG52ID0gY3JlYXRlX3ZvY2FidWxhcnkoaXQpICU+JSBwcnVuZV92b2NhYnVsYXJ5KGRvY19wcm9wb3J0aW9uX21heCA9IDAuMSwgdGVybV9jb3VudF9taW4gPSAzKVxuXG5gYGAifQ== -->
+<pre class="r"><code>library(text2vec)
+
+test &lt;- Qs_clean %&gt;% filter(Subject == &quot;MTH&quot;) 
+  
+clean &lt;- test$fullText %&gt;%
+    str_to_lower  %&gt;% 
+    {gsub(&quot;[^A-Za-z0-9]&quot;, &quot; &quot;, .)} %&gt;%
+    #{gsub(&quot;[^a-zA-Z\\s]&quot;, &quot;&quot;, .)} %&gt;% 
+    #{gsub(&quot;//d&quot;, &quot;&quot;,.)} %&gt;%
+    {gsub(&quot;[[:punct:]]&quot;,&quot; &quot;, .)} %&gt;%
+    str_squish
+
+
+
+it = itoken(clean, progressbar = FALSE)
+
+v = create_vocabulary(it) %&gt;% prune_vocabulary(doc_proportion_max = 0.1, term_count_min = 3)
+</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
@@ -202,12 +252,24 @@ $(document).ready(function () {
 <h2>Creating Document Term Matices - text2vec</h2>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxudmVjdG9yaXplciA9IHZvY2FiX3ZlY3Rvcml6ZXIodilcblxuZHRtID0gY3JlYXRlX2R0bShpdCwgdmVjdG9yaXplcilcbmRpbShkdG0pXG5cbmBgYCJ9 -->
+<pre class="r"><code>vectorizer = vocab_vectorizer(v)
+
+dtm = create_dtm(it, vectorizer)
+dim(dtm)
+</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <div id="applying-tf-idf-on-dtm" class="section level3">
 <h3>Applying tf-idf on dtm</h3>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxudGZpZGYgPSBUZklkZiRuZXcoKVxuZHRtX3RmaWRmID0gZml0X3RyYW5zZm9ybShkdG0sIHRmaWRmKVxuZHRtX3RmaWRmWzE6NSwgMTo1XVxuYGBgIn0= -->
+<pre class="r"><code>tfidf = TfIdf$new()
+dtm_tfidf = fit_transform(dtm, tfidf)
+dtm_tfidf[1:5, 1:5]</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
@@ -216,6 +278,11 @@ $(document).ready(function () {
 <h2>Cosine similarities between all rows of dtm_tfidf matrix</h2>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxudGZpZGZfY29zX3NpbSA9IHNpbTIoeCA9IGR0bV90ZmlkZiwgbWV0aG9kID0gXCJjb3NpbmVcIiwgbm9ybSA9IFwibDJcIilcbnRmaWRmX2Nvc19zaW1bMTo2LCAxOjZdXG5cbmBgYCJ9 -->
+<pre class="r"><code>tfidf_cos_sim = sim2(x = dtm_tfidf, method = &quot;cosine&quot;, norm = &quot;l2&quot;)
+tfidf_cos_sim[1:6, 1:6]
+</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
@@ -224,12 +291,26 @@ $(document).ready(function () {
 <p>Usually tf-idf/bag-of-words matrices contain a lot of noise. Applying LSA model can help with this problem, so you can achieve better quality similarities</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBBZGQgbm8gb2YgdG9waWNzIGluIHlvdXIgcmVwbyAoS2VlcCBubyBsZXNzIHRoYW4gMjAgZWxzZSBjb2RlIHdpbGwgY3Jhc2gpXG5sc2EgPSBMU0EkbmV3KG5fdG9waWNzID0gMTUpXG5kdG1fdGZpZGZfbHNhID0gZml0X3RyYW5zZm9ybShkdG1fdGZpZGYsIGxzYSlcblxudGZpZGZfbHNhX2Nvc19zaW0gPSBzaW0yKHggPSBkdG1fdGZpZGZfbHNhLCBtZXRob2QgPSBcImNvc2luZVwiLCBub3JtID0gXCJsMlwiKVxudGZpZGZfbHNhX2Nvc19zaW1bMTo2LCAxOjZdXG5cbmBgYCJ9 -->
+<pre class="r"><code># Add no of topics in your repo (Keep no less than 20 else code will crash)
+lsa = LSA$new(n_topics = 15)
+dtm_tfidf_lsa = fit_transform(dtm_tfidf, lsa)
+
+tfidf_lsa_cos_sim = sim2(x = dtm_tfidf_lsa, method = &quot;cosine&quot;, norm = &quot;l2&quot;)
+tfidf_lsa_cos_sim[1:6, 1:6]
+</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <div id="tidying-similarity-matrix" class="section level3">
 <h3>Tidying similarity matrix</h3>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc2ltaWxhcml0eSA8LSB0ZmlkZl9sc2FfY29zX3NpbSAlPiUgYXMuZGF0YS5mcmFtZS50YWJsZSgpXG5oZWFkKHNpbWlsYXJpdHkpXG5cbmBgYCJ9 -->
+<pre class="r"><code>similarity &lt;- tfidf_lsa_cos_sim %&gt;% as.data.frame.table()
+head(similarity)
+</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
@@ -237,6 +318,15 @@ $(document).ready(function () {
 <h3>Filtering near duplicates</h3>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBGaWd1cmUgb3V0IHRoZSBvcHRpbXVtIHNpbWlsYXJpdHkgdGhyZXNob2xkIC0gMC45OSw5OSw5OTlcbmR1cGxfbGlzdCA8LSBmaWx0ZXIoc2ltaWxhcml0eSwgRnJlcSA+IC45OTk5OTk5KSAlPiVcbiAgcmVuYW1lKCByb3cgPSBWYXIxLCBjb2x1bW4gPSBWYXIyLCBTaW1pbGFyaXR5X01lYXN1cmUgPSBGcmVxKSAlPiUgXG4gIGZpbHRlcihhcy5udW1lcmljKHJvdykgPiBhcy5udW1lcmljKGNvbHVtbikpICAlPiUgICAjIFJlbW92ZSBkb3VibGUgZW50cmllcyBpbiBhIHN5bW1ldHJpYyBtYXRyaXggaSxqIGFuZCBqLGlcbiAgZmlsdGVyKHJvdyAhPSBjb2x1bW4pICAgICAgICMgUmVtb3ZlIGRpYWdub2wgZW50cmllc1xuICBcbmhlYWQoZHVwbF9saXN0KVxuYGBgIn0= -->
+<pre class="r"><code># Figure out the optimum similarity threshold - 0.99,99,999
+dupl_list &lt;- filter(similarity, Freq &gt; .9999999) %&gt;%
+  rename( row = Var1, column = Var2, Similarity_Measure = Freq) %&gt;% 
+  filter(as.numeric(row) &gt; as.numeric(column))  %&gt;%   # Remove double entries in a symmetric matrix i,j and j,i
+  filter(row != column)       # Remove diagnol entries
+  
+head(dupl_list)</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
@@ -245,10 +335,19 @@ $(document).ready(function () {
 <h2>Final list of Duplicate Qs</h2>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZHVwbGljYXRlcyA8LSBkdXBsX2xpc3QgJT4lIFxuICBtdXRhdGUocm93X2lkID0gdGVzdCRDb2RlW3Jvd10sIHJvd19xID0gdGVzdCRmdWxsVGV4dFtyb3ddLCByb3dfdG9waWMgPSB0ZXN0JFRvcGljX0NvZGVbcm93XSwgcm93X3N0YXR1cyA9IHRlc3QkU3RhdHVzW3Jvd10sY29sX2lkID0gdGVzdCRDb2RlW2NvbHVtbl0sICBjb2xfcSA9IHRlc3QkZnVsbFRleHRbY29sdW1uXSxjb2xfdG9waWMgPSB0ZXN0JFRvcGljX0NvZGVbY29sdW1uXSwgY29sX3N0YXR1cyA9IHRlc3QkU3RhdHVzW2NvbHVtbl0pIFxuXG5kdXBsaWNhdGVzW2MoMTo1KSxjKDQsNSw3LDgpXVxuXG53cml0ZV9jc3YoZHVwbGljYXRlcywgXCJkdXBsaWNhdGUuY3N2XCIpXG5cbmBgYCJ9 -->
+<pre class="r"><code>duplicates &lt;- dupl_list %&gt;% 
+  mutate(row_id = test$Code[row], row_q = test$fullText[row], row_topic = test$Topic_Code[row], row_status = test$Status[row],col_id = test$Code[column],  col_q = test$fullText[column],col_topic = test$Topic_Code[column], col_status = test$Status[column]) 
+
+duplicates[c(1:5),c(4,5,7,8)]
+
+write_csv(duplicates, &quot;duplicate.csv&quot;)
+</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 </div>
 
-<div id="rmd-source-code">LS0tDQp0aXRsZTogIkRlLWR1cGxpY2F0aW5nIENNUyByZXBvc2l0cnkiDQphdXRob3I6ICJQcml0ZXNoIFNocml2YXN0YXZhIg0KZGF0ZTogIkphbnVhcnkgMjIsIDIwMTgiDQpvdXRwdXQ6DQogIHBkZl9kb2N1bWVudDogZGVmYXVsdA0KICBodG1sX2RvY3VtZW50OiBkZWZhdWx0DQogIGh0bWxfbm90ZWJvb2s6IGRlZmF1bHQNCi0tLQ0KDQojIyBSZWFkaW5nIGRhdGEgZnJvbSBDTVMNCg0KYGBge3IgZWNobyA9IEZBTFNFfQ0KbGlicmFyeSgndGlkeXZlcnNlJykNCmxpYnJhcnkoJ1NwYXJzZU0nKQ0KbGlicmFyeSgndG0nKQ0KbGlicmFyeSgnY2FyZXQnKQ0KbGlicmFyeSgnU25vd2JhbGxDJykNCmxpYnJhcnkoJ3N0cmluZ3InKQ0KDQpRcyA8LSByZWFkX3RzdigicXNfdG9waWN3aXNlX2R1bXAudHN2IikNCg0KaGVhZChRcykNCmBgYA0KDQojIyBBZGRpbmcgR3JhZGUsIFN1YmplY3QsIEN1cnJpY3VsdW0gYW5kIENoYXB0ZXIgTm8gDQoNCmBgYHtyIGVjaG8gPSBGQUxTRX0NCiMgTmVlZCB0byBjbGVhbiB0aGUgb3ZlcmZsb3cgb2YgdGV4dA0KUXNfY2xlYW4gPC0gUXMgICU+JQ0KICBkcGx5cjo6c2VsZWN0KDE6MTQpICU+JSAgICAgICAgICAgICAgICAgIyBLZWVwaW5nIG9ubHkgdGhlIGZpcnN0IDE0IGNvbHVtbnMNCiAgZmlsdGVyKCFpcy5uYShEaWZmaWN1bHR5KSkgICU+JSAgICAgICAgICMgQ2xlYW5pbmcgb3ZlcmZsb3cNCiAgbXV0YXRlKEdyYWRlID0gc3RyX3N1YihUb3BpY19Db2RlLCA1LCA2KSwgU3ViamVjdCA9IHN0cl9zdWIoVG9waWNfQ29kZSwgMSwgMyksIEN1cnJpY3VsdW0gPSBzdHJfc3ViKFRvcGljX0NvZGUsIDgsIDEwKSwgQ2hfTm8gPSBzdHJfc3ViKFRvcGljX0NvZGUsIDEyLCAxMykpDQoNCiMgUmVtb3Zpbmcgbm9uLVVURiBjaGFyYWN0ZXJzDQojUXNfY2xlYW4kVGV4dCA8LSBsYXBwbHkoUXNfY2xlYW4kVGV4dCxnc3ViLCBwYXR0ZXJuID0gIlteWzphbG51bTpdXSIsIHJlcGxhY2VtZW50ID0gIiAiKQ0KI1FzX2NsZWFuJFRleHQgPC0gbGFwcGx5KFFzX2NsZWFuJFRleHQsZ3N1YiwgcGF0dGVybiA9ICI8Lio/PiIsIHJlcGxhY2VtZW50PSAiICIpDQpRc19jbGVhbiRmdWxsVGV4dCA9IHBhc3RlKFFzX2NsZWFuJFRleHQsIFFzX2NsZWFuJEEsIFFzX2NsZWFuJEIsIFFzX2NsZWFuJEMsIFFzX2NsZWFuJEQpDQoNClFzX2NsZWFuIDwtIFFzX2NsZWFuICU+JSBmaWx0ZXIoc3RyX2xlbmd0aChRc19jbGVhbiRmdWxsVGV4dCkgPiA1MCkNCiMgUmVtb3ZlZCBEdW1teSBRcyBhbmQgU3BlY3RydW0gYW5zIGtleQ0KDQpoZWFkKFFzX2NsZWFuKQ0KDQpgYGANCg0KIyMgQ3JlYXRpbmcgdm9jYWJ1bGFyeSBieSB0b2tlbml6aW5nIHRleHQgLSB1c2luZyB0ZXh0MnZlYw0KDQpgYGB7ciBlY2hvID0gRkFMU0V9DQpsaWJyYXJ5KHRleHQydmVjKQ0KDQp0ZXN0IDwtIFFzX2NsZWFuICU+JSBmaWx0ZXIoU3ViamVjdCA9PSAiTVRIIikgDQogIA0KY2xlYW4gPC0gdGVzdCRmdWxsVGV4dCAlPiUNCiAgICBzdHJfdG9fbG93ZXIgICU+JSANCiAgICB7Z3N1YigiW15BLVphLXowLTldIiwgIiAiLCAuKX0gJT4lDQogICAgI3tnc3ViKCJbXmEtekEtWlxcc10iLCAiIiwgLil9ICU+JSANCiAgICAje2dzdWIoIi8vZCIsICIiLC4pfSAlPiUNCiAgICB7Z3N1YigiW1s6cHVuY3Q6XV0iLCIgIiwgLil9ICU+JQ0KICAgIHN0cl9zcXVpc2gNCg0KDQoNCml0ID0gaXRva2VuKGNsZWFuLCBwcm9ncmVzc2JhciA9IEZBTFNFKQ0KDQp2ID0gY3JlYXRlX3ZvY2FidWxhcnkoaXQpICU+JSBwcnVuZV92b2NhYnVsYXJ5KGRvY19wcm9wb3J0aW9uX21heCA9IDAuMSwgdGVybV9jb3VudF9taW4gPSAzKQ0KDQpgYGANCg0KIyMgQ3JlYXRpbmcgRG9jdW1lbnQgVGVybSBNYXRpY2VzIC0gdGV4dDJ2ZWMNCg0KYGBge3IgZWNobyA9IEZBTFNFfQ0KdmVjdG9yaXplciA9IHZvY2FiX3ZlY3Rvcml6ZXIodikNCg0KZHRtID0gY3JlYXRlX2R0bShpdCwgdmVjdG9yaXplcikNCmRpbShkdG0pDQoNCmBgYA0KDQoNCiMjIyBBcHBseWluZyB0Zi1pZGYgb24gZHRtDQoNCmBgYHtyIGVjaG8gPSBGQUxTRX0NCnRmaWRmID0gVGZJZGYkbmV3KCkNCmR0bV90ZmlkZiA9IGZpdF90cmFuc2Zvcm0oZHRtLCB0ZmlkZikNCmR0bV90ZmlkZlsxOjUsIDE6NV0NCmBgYA0KDQojIyBDb3NpbmUgc2ltaWxhcml0aWVzIGJldHdlZW4gYWxsIHJvd3Mgb2YgZHRtX3RmaWRmIG1hdHJpeA0KDQpgYGB7ciBlY2hvID0gRkFMU0V9DQp0ZmlkZl9jb3Nfc2ltID0gc2ltMih4ID0gZHRtX3RmaWRmLCBtZXRob2QgPSAiY29zaW5lIiwgbm9ybSA9ICJsMiIpDQp0ZmlkZl9jb3Nfc2ltWzE6NiwgMTo2XQ0KDQpgYGANCg0KIyMgQ29zaW5lIHNpbWlsYXJpdHkgd2l0aCBMYXRlbnQgU2VtYW50aWMgQW5hbHlzaXMNCg0KVXN1YWxseSB0Zi1pZGYvYmFnLW9mLXdvcmRzIG1hdHJpY2VzIGNvbnRhaW4gYSBsb3Qgb2Ygbm9pc2UuIEFwcGx5aW5nIExTQSBtb2RlbCBjYW4gaGVscCB3aXRoIHRoaXMgcHJvYmxlbSwgc28geW91IGNhbiBhY2hpZXZlIGJldHRlciBxdWFsaXR5IHNpbWlsYXJpdGllcw0KDQpgYGB7ciBlY2hvID0gRkFMU0V9DQojIEFkZCBubyBvZiB0b3BpY3MgaW4geW91ciByZXBvIChLZWVwIG5vIGxlc3MgdGhhbiAyMCBlbHNlIGNvZGUgd2lsbCBjcmFzaCkNCmxzYSA9IExTQSRuZXcobl90b3BpY3MgPSAxNSkNCmR0bV90ZmlkZl9sc2EgPSBmaXRfdHJhbnNmb3JtKGR0bV90ZmlkZiwgbHNhKQ0KDQp0ZmlkZl9sc2FfY29zX3NpbSA9IHNpbTIoeCA9IGR0bV90ZmlkZl9sc2EsIG1ldGhvZCA9ICJjb3NpbmUiLCBub3JtID0gImwyIikNCnRmaWRmX2xzYV9jb3Nfc2ltWzE6NiwgMTo2XQ0KDQpgYGANCg0KIyMjIFRpZHlpbmcgc2ltaWxhcml0eSBtYXRyaXgNCg0KYGBge3IgZWNobz1GQUxTRX0NCnNpbWlsYXJpdHkgPC0gdGZpZGZfbHNhX2Nvc19zaW0gJT4lIGFzLmRhdGEuZnJhbWUudGFibGUoKQ0KaGVhZChzaW1pbGFyaXR5KQ0KDQpgYGANCg0KIyMjIEZpbHRlcmluZyBuZWFyIGR1cGxpY2F0ZXMNCg0KYGBge3IgZWNobz1GQUxTRX0NCiMgRmlndXJlIG91dCB0aGUgb3B0aW11bSBzaW1pbGFyaXR5IHRocmVzaG9sZCAtIDAuOTksOTksOTk5DQpkdXBsX2xpc3QgPC0gZmlsdGVyKHNpbWlsYXJpdHksIEZyZXEgPiAuOTk5OTk5OSkgJT4lDQogIHJlbmFtZSggcm93ID0gVmFyMSwgY29sdW1uID0gVmFyMiwgU2ltaWxhcml0eV9NZWFzdXJlID0gRnJlcSkgJT4lIA0KICBmaWx0ZXIoYXMubnVtZXJpYyhyb3cpID4gYXMubnVtZXJpYyhjb2x1bW4pKSAgJT4lICAgIyBSZW1vdmUgZG91YmxlIGVudHJpZXMgaW4gYSBzeW1tZXRyaWMgbWF0cml4IGksaiBhbmQgaixpDQogIGZpbHRlcihyb3cgIT0gY29sdW1uKSAgICAgICAjIFJlbW92ZSBkaWFnbm9sIGVudHJpZXMNCiAgDQpoZWFkKGR1cGxfbGlzdCkNCmBgYA0KDQojIyBGaW5hbCBsaXN0IG9mIER1cGxpY2F0ZSBRcw0KDQpgYGB7ciBlY2hvPUZBTFNFfQ0KZHVwbGljYXRlcyA8LSBkdXBsX2xpc3QgJT4lIA0KICBtdXRhdGUocm93X2lkID0gdGVzdCRDb2RlW3Jvd10sIHJvd19xID0gdGVzdCRmdWxsVGV4dFtyb3ddLCByb3dfdG9waWMgPSB0ZXN0JFRvcGljX0NvZGVbcm93XSwgcm93X3N0YXR1cyA9IHRlc3QkU3RhdHVzW3Jvd10sY29sX2lkID0gdGVzdCRDb2RlW2NvbHVtbl0sICBjb2xfcSA9IHRlc3QkZnVsbFRleHRbY29sdW1uXSxjb2xfdG9waWMgPSB0ZXN0JFRvcGljX0NvZGVbY29sdW1uXSwgY29sX3N0YXR1cyA9IHRlc3QkU3RhdHVzW2NvbHVtbl0pIA0KDQpkdXBsaWNhdGVzW2MoMTo1KSxjKDQsNSw3LDgpXQ0KDQp3cml0ZV9jc3YoZHVwbGljYXRlcywgImR1cGxpY2F0ZS5jc3YiKQ0KDQpgYGA=</div>
+<div id="rmd-source-code">LS0tDQp0aXRsZTogIkRlLWR1cGxpY2F0aW5nIENNUyByZXBvc2l0cnkiDQphdXRob3I6ICJQcml0ZXNoIFNocml2YXN0YXZhIg0KZGF0ZTogIkphbnVhcnkgMjIsIDIwMTgiDQpvdXRwdXQ6DQogIHBkZl9kb2N1bWVudDogZGVmYXVsdA0KICBodG1sX2RvY3VtZW50OiBkZWZhdWx0DQogIGh0bWxfbm90ZWJvb2s6IGRlZmF1bHQNCi0tLQ0KDQojIyBSZWFkaW5nIGRhdGEgZnJvbSBDTVMNCg0KYGBge3J9DQpsaWJyYXJ5KCd0aWR5dmVyc2UnKQ0KbGlicmFyeSgnU3BhcnNlTScpDQpsaWJyYXJ5KCd0bScpDQpsaWJyYXJ5KCdjYXJldCcpDQpsaWJyYXJ5KCdTbm93YmFsbEMnKQ0KbGlicmFyeSgnc3RyaW5ncicpDQoNClFzIDwtIHJlYWRfdHN2KCJxc190b3BpY3dpc2VfZHVtcC50c3YiKQ0KDQpoZWFkKFFzKQ0KYGBgDQoNCiMjIEFkZGluZyBHcmFkZSwgU3ViamVjdCwgQ3VycmljdWx1bSBhbmQgQ2hhcHRlciBObyANCg0KYGBge3J9DQojIE5lZWQgdG8gY2xlYW4gdGhlIG92ZXJmbG93IG9mIHRleHQNClFzX2NsZWFuIDwtIFFzICAlPiUNCiAgZHBseXI6OnNlbGVjdCgxOjE0KSAlPiUgICAgICAgICAgICAgICAgICMgS2VlcGluZyBvbmx5IHRoZSBmaXJzdCAxNCBjb2x1bW5zDQogIGZpbHRlcighaXMubmEoRGlmZmljdWx0eSkpICAlPiUgICAgICAgICAjIENsZWFuaW5nIG92ZXJmbG93DQogIG11dGF0ZShHcmFkZSA9IHN0cl9zdWIoVG9waWNfQ29kZSwgNSwgNiksIFN1YmplY3QgPSBzdHJfc3ViKFRvcGljX0NvZGUsIDEsIDMpLCBDdXJyaWN1bHVtID0gc3RyX3N1YihUb3BpY19Db2RlLCA4LCAxMCksIENoX05vID0gc3RyX3N1YihUb3BpY19Db2RlLCAxMiwgMTMpKQ0KDQojIFJlbW92aW5nIG5vbi1VVEYgY2hhcmFjdGVycw0KI1FzX2NsZWFuJFRleHQgPC0gbGFwcGx5KFFzX2NsZWFuJFRleHQsZ3N1YiwgcGF0dGVybiA9ICJbXls6YWxudW06XV0iLCByZXBsYWNlbWVudCA9ICIgIikNCiNRc19jbGVhbiRUZXh0IDwtIGxhcHBseShRc19jbGVhbiRUZXh0LGdzdWIsIHBhdHRlcm4gPSAiPC4qPz4iLCByZXBsYWNlbWVudD0gIiAiKQ0KUXNfY2xlYW4kZnVsbFRleHQgPSBwYXN0ZShRc19jbGVhbiRUZXh0LCBRc19jbGVhbiRBLCBRc19jbGVhbiRCLCBRc19jbGVhbiRDLCBRc19jbGVhbiREKQ0KDQpRc19jbGVhbiA8LSBRc19jbGVhbiAlPiUgZmlsdGVyKHN0cl9sZW5ndGgoUXNfY2xlYW4kZnVsbFRleHQpID4gNTApDQojIFJlbW92ZWQgRHVtbXkgUXMgYW5kIFNwZWN0cnVtIGFucyBrZXkNCg0KaGVhZChRc19jbGVhbikNCg0KYGBgDQoNCiMjIENyZWF0aW5nIHZvY2FidWxhcnkgYnkgdG9rZW5pemluZyB0ZXh0IC0gdXNpbmcgdGV4dDJ2ZWMNCg0KYGBge3J9DQpsaWJyYXJ5KHRleHQydmVjKQ0KDQp0ZXN0IDwtIFFzX2NsZWFuICU+JSBmaWx0ZXIoU3ViamVjdCA9PSAiTVRIIikgDQogIA0KY2xlYW4gPC0gdGVzdCRmdWxsVGV4dCAlPiUNCiAgICBzdHJfdG9fbG93ZXIgICU+JSANCiAgICB7Z3N1YigiW15BLVphLXowLTldIiwgIiAiLCAuKX0gJT4lDQogICAgI3tnc3ViKCJbXmEtekEtWlxcc10iLCAiIiwgLil9ICU+JSANCiAgICAje2dzdWIoIi8vZCIsICIiLC4pfSAlPiUNCiAgICB7Z3N1YigiW1s6cHVuY3Q6XV0iLCIgIiwgLil9ICU+JQ0KICAgIHN0cl9zcXVpc2gNCg0KDQoNCml0ID0gaXRva2VuKGNsZWFuLCBwcm9ncmVzc2JhciA9IEZBTFNFKQ0KDQp2ID0gY3JlYXRlX3ZvY2FidWxhcnkoaXQpICU+JSBwcnVuZV92b2NhYnVsYXJ5KGRvY19wcm9wb3J0aW9uX21heCA9IDAuMSwgdGVybV9jb3VudF9taW4gPSAzKQ0KDQpgYGANCg0KIyMgQ3JlYXRpbmcgRG9jdW1lbnQgVGVybSBNYXRpY2VzIC0gdGV4dDJ2ZWMNCg0KYGBge3J9DQp2ZWN0b3JpemVyID0gdm9jYWJfdmVjdG9yaXplcih2KQ0KDQpkdG0gPSBjcmVhdGVfZHRtKGl0LCB2ZWN0b3JpemVyKQ0KZGltKGR0bSkNCg0KYGBgDQoNCg0KIyMjIEFwcGx5aW5nIHRmLWlkZiBvbiBkdG0NCg0KYGBge3J9DQp0ZmlkZiA9IFRmSWRmJG5ldygpDQpkdG1fdGZpZGYgPSBmaXRfdHJhbnNmb3JtKGR0bSwgdGZpZGYpDQpkdG1fdGZpZGZbMTo1LCAxOjVdDQpgYGANCg0KIyMgQ29zaW5lIHNpbWlsYXJpdGllcyBiZXR3ZWVuIGFsbCByb3dzIG9mIGR0bV90ZmlkZiBtYXRyaXgNCg0KYGBge3J9DQp0ZmlkZl9jb3Nfc2ltID0gc2ltMih4ID0gZHRtX3RmaWRmLCBtZXRob2QgPSAiY29zaW5lIiwgbm9ybSA9ICJsMiIpDQp0ZmlkZl9jb3Nfc2ltWzE6NiwgMTo2XQ0KDQpgYGANCg0KIyMgQ29zaW5lIHNpbWlsYXJpdHkgd2l0aCBMYXRlbnQgU2VtYW50aWMgQW5hbHlzaXMNCg0KVXN1YWxseSB0Zi1pZGYvYmFnLW9mLXdvcmRzIG1hdHJpY2VzIGNvbnRhaW4gYSBsb3Qgb2Ygbm9pc2UuIEFwcGx5aW5nIExTQSBtb2RlbCBjYW4gaGVscCB3aXRoIHRoaXMgcHJvYmxlbSwgc28geW91IGNhbiBhY2hpZXZlIGJldHRlciBxdWFsaXR5IHNpbWlsYXJpdGllcw0KDQpgYGB7cn0NCiMgQWRkIG5vIG9mIHRvcGljcyBpbiB5b3VyIHJlcG8gKEtlZXAgbm8gbGVzcyB0aGFuIDIwIGVsc2UgY29kZSB3aWxsIGNyYXNoKQ0KbHNhID0gTFNBJG5ldyhuX3RvcGljcyA9IDE1KQ0KZHRtX3RmaWRmX2xzYSA9IGZpdF90cmFuc2Zvcm0oZHRtX3RmaWRmLCBsc2EpDQoNCnRmaWRmX2xzYV9jb3Nfc2ltID0gc2ltMih4ID0gZHRtX3RmaWRmX2xzYSwgbWV0aG9kID0gImNvc2luZSIsIG5vcm0gPSAibDIiKQ0KdGZpZGZfbHNhX2Nvc19zaW1bMTo2LCAxOjZdDQoNCmBgYA0KDQojIyMgVGlkeWluZyBzaW1pbGFyaXR5IG1hdHJpeA0KDQpgYGB7cn0NCnNpbWlsYXJpdHkgPC0gdGZpZGZfbHNhX2Nvc19zaW0gJT4lIGFzLmRhdGEuZnJhbWUudGFibGUoKQ0KaGVhZChzaW1pbGFyaXR5KQ0KDQpgYGANCg0KIyMjIEZpbHRlcmluZyBuZWFyIGR1cGxpY2F0ZXMNCg0KYGBge3J9DQojIEZpZ3VyZSBvdXQgdGhlIG9wdGltdW0gc2ltaWxhcml0eSB0aHJlc2hvbGQgLSAwLjk5LDk5LDk5OQ0KZHVwbF9saXN0IDwtIGZpbHRlcihzaW1pbGFyaXR5LCBGcmVxID4gLjk5OTk5OTkpICU+JQ0KICByZW5hbWUoIHJvdyA9IFZhcjEsIGNvbHVtbiA9IFZhcjIsIFNpbWlsYXJpdHlfTWVhc3VyZSA9IEZyZXEpICU+JSANCiAgZmlsdGVyKGFzLm51bWVyaWMocm93KSA+IGFzLm51bWVyaWMoY29sdW1uKSkgICU+JSAgICMgUmVtb3ZlIGRvdWJsZSBlbnRyaWVzIGluIGEgc3ltbWV0cmljIG1hdHJpeCBpLGogYW5kIGosaQ0KICBmaWx0ZXIocm93ICE9IGNvbHVtbikgICAgICAgIyBSZW1vdmUgZGlhZ25vbCBlbnRyaWVzDQogIA0KaGVhZChkdXBsX2xpc3QpDQpgYGANCg0KIyMgRmluYWwgbGlzdCBvZiBEdXBsaWNhdGUgUXMNCg0KYGBge3J9DQpkdXBsaWNhdGVzIDwtIGR1cGxfbGlzdCAlPiUgDQogIG11dGF0ZShyb3dfaWQgPSB0ZXN0JENvZGVbcm93XSwgcm93X3EgPSB0ZXN0JGZ1bGxUZXh0W3Jvd10sIHJvd190b3BpYyA9IHRlc3QkVG9waWNfQ29kZVtyb3ddLCByb3dfc3RhdHVzID0gdGVzdCRTdGF0dXNbcm93XSxjb2xfaWQgPSB0ZXN0JENvZGVbY29sdW1uXSwgIGNvbF9xID0gdGVzdCRmdWxsVGV4dFtjb2x1bW5dLGNvbF90b3BpYyA9IHRlc3QkVG9waWNfQ29kZVtjb2x1bW5dLCBjb2xfc3RhdHVzID0gdGVzdCRTdGF0dXNbY29sdW1uXSkgDQoNCmR1cGxpY2F0ZXNbYygxOjUpLGMoNCw1LDcsOCldDQoNCndyaXRlX2NzdihkdXBsaWNhdGVzLCAiZHVwbGljYXRlLmNzdiIpDQoNCmBgYA==</div>
 
 
 
