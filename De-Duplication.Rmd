@@ -107,8 +107,9 @@ tfidf_lsa_cos_sim[1:6, 1:6]
 
 ```
 
-### Tidying similarity matrix - VERY disk heavy operation. Crashed both EC2 and Ubuntu.
-### Melt was even slower. Tidy did not change the matrix
+### Tidying similarity matrix 
+VERY disk heavy operation. Crashed both EC2 and Ubuntu.
+Melt was even slower. Tidy did not change the matrix
 
 ```{r}
 similarity <- tfidf_lsa_cos_sim %>% as.data.frame.table()
